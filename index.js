@@ -92,7 +92,7 @@ io.on('connection', (socket) => {
     try {
       const transport = await router.createWebRtcTransport({
         listenIps: [
-          { ip: '0.0.0.0', announcedIp: 'https://webrtc-conference.netlify.app' }    
+          { ip: '0.0.0.0', announcedIp: 'https://webrtc-live.onrender.com' }    
         ],
         enableUdp: true,
         enableTcp: true,
