@@ -37,6 +37,8 @@ const createWorkerAndRouter = async () => {
 createWorkerAndRouter();
 
 io.on('connection', (socket) => {
+  console.log('New client connected:', socket.id);
+  
   users.set(socket.id, {
     id: socket.id,
     name: `User-${socket.id.substring(0, 6)}`,
@@ -46,12 +48,14 @@ io.on('connection', (socket) => {
   });
 
   socket.on('setUserName', (userName, cb) => {
+    console.log('Setting username for', socket.id, ':', userName);
     const user = users.get(socket.id);
     if (user) {
       user.name = userName || `User-${socket.id.substring(0, 6)}`;
       
       const userProducers = producers.filter(p => user.producers.includes(p.id));
       if (userProducers.length > 0) {
+        console.log('Broadcasting username update for existing producers:', userProducers.length);
         socket.broadcast.emit('userNameUpdated', {
           userId: socket.id,
           userName: user.name,
@@ -79,6 +83,7 @@ io.on('connection', (socket) => {
     };
   });
   
+  console.log('Sending existing producers to new client:', existingProducers.length);
   socket.emit('activeProducers', existingProducers);
 
   socket.on('getRtpCapabilities', (cb) => cb(router.rtpCapabilities));
@@ -123,9 +128,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('produce', async ({ transportId, kind, rtpParameters }, cb) => {
+    console.log('Produce request from', socket.id, 'for', kind);
     try {
       const transport = transports.find(t => t.id === transportId);
       if (!transport) {
+        console.error('Transport not found for produce:', transportId);
         return cb({ error: 'Transport not found' });
       }
       
@@ -135,6 +142,7 @@ io.on('connection', (socket) => {
       
       const user = users.get(socket.id);
       
+      console.log('Broadcasting new producer to all clients:', producer.id, kind, user.name);
       socket.broadcast.emit('newProducer', { 
         producerId: producer.id, 
         kind: producer.kind,
@@ -144,28 +152,34 @@ io.on('connection', (socket) => {
       
       cb({ id: producer.id });
     } catch (error) {
+      console.error('Error in produce:', error);
       cb({ error: error.message });
     }
   });
 
   socket.on('consume', async ({ transportId, producerId, rtpCapabilities }, cb) => {
+    console.log('Consume request from', socket.id, 'for producer:', producerId);
     try {
       const transport = transports.find(t => t.id === transportId);
       const producer = producers.find(p => p.id === producerId);
       
       if (!transport) {
+        console.error('Transport not found for consume:', transportId);
         return cb({ error: 'Transport not found' });
       }
       if (!producer) {
+        console.error('Producer not found for consume:', producerId);
         return cb({ error: 'Producer not found' });
       }
       
       const user = users.get(socket.id);
       if (user && user.producers.includes(producerId)) {
+        console.log('User trying to consume own producer, rejecting');
         return cb({ error: 'Cannot consume own producer' });
       }
       
       if (!router.canConsume({ producerId, rtpCapabilities })) {
+        console.error('Router cannot consume this producer');
         return cb({ error: 'Cannot consume' });
       }
       
@@ -178,6 +192,7 @@ io.on('connection', (socket) => {
       consumers.push(consumer);
       users.get(socket.id).consumers.push(consumer.id);
       
+      console.log('Consumer created successfully:', consumer.id, 'for producer:', producerId);
       cb({
         id: consumer.id,
         kind: consumer.kind,
@@ -185,6 +200,7 @@ io.on('connection', (socket) => {
         producerId: producer.id,
       });
     } catch (error) {
+      console.error('Error in consume:', error);
       cb({ error: error.message });
     }
   });
@@ -208,17 +224,21 @@ io.on('connection', (socket) => {
         };
       });
     
+    console.log('Sending available producers to', socket.id, ':', availableProducers.length);
     cb(availableProducers);
   });
 
   socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
     const user = users.get(socket.id);
     if (user) {
+      console.log('Cleaning up user resources:', user.producers.length, 'producers');
       user.producers.forEach(producerId => {
         const producerIndex = producers.findIndex(p => p.id === producerId);
         if (producerIndex !== -1) {
           producers[producerIndex].close();
           producers.splice(producerIndex, 1);
+          console.log('Broadcasting producer closed:', producerId);
           io.emit('producerClosed', { producerId });
         }
       });
