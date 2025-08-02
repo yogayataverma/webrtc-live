@@ -92,7 +92,7 @@ io.on('connection', (socket) => {
     try {
       const transport = await router.createWebRtcTransport({
         listenIps: [
-          { ip: '0.0.0.0', announcedIp: 'webrtc-live.onrender.com' }    
+          { ip: '0.0.0.0', announcedIp: '44.226.145.213' }    
         ],
         enableUdp: true,
         enableTcp: true,
