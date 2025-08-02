@@ -108,7 +108,7 @@ export default function Stream() {
     const initializeStream = async () => {
       try {
         const isSecure = window.location.protocol === 'https:' || 
-                        window.location.hostname === 'localhost' || 
+                        window.location.hostname === 'webrtc-live.onrender.com' || 
                         window.location.hostname === '127.0.0.1';
                         
         if (!isSecure && navigator.mediaDevices) {
@@ -116,7 +116,7 @@ export default function Stream() {
         }
         
         setStatus('Connecting to server...');
-        const socketConnection = io('http://localhost:4000');
+        const socketConnection = io('https://webrtc-live.onrender.com');
         setSocket(socketConnection);
 
         socketConnection.on('connect', () => {
