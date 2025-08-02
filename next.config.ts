@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ['http://localhost:4000'],
+  allowedDevOrigins: ['https://webrtc-live.onrender.com'],
 };
 
 export default nextConfig;
