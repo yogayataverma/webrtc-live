@@ -33,7 +33,7 @@ export default function Watch() {
     const initializeWatcher = async () => {
       try {
         setStatus('Connecting to server...');
-        const socketConnection = io('http://localhost:4000');
+        const socketConnection = io('https://webrtc-live.onrender.com');
         setSocket(socketConnection);
 
         socketConnection.on('connect', () => {
